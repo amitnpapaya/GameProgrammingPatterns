@@ -9,12 +9,27 @@ public class Actor : MonoBehaviour
     [SerializeField] private Animator _animator;
     [SerializeField] private NavMeshAgent _navMeshAgent;
     [SerializeField] private float _boredTimerSeconds;
+    [SerializeField] private Selection _selection;
     
     private CancellationTokenSource _boredCancellationToken = new();
     
     private static readonly int BoredParameter = Animator.StringToHash("Bored");
     private static readonly int SpeedParameter = Animator.StringToHash("Speed");
     
+    private bool _selected;
+    public bool Selected => _selected;
+
+    private void Awake()
+    {
+        SetSelected(false);
+    }
+
+    public void SetSelected(bool selected)
+    {
+        _selected = selected;
+        _selection.gameObject.SetActive(selected);
+    }
+
     private void Update()
     {
         HandleAnimations();
@@ -55,5 +70,10 @@ public class Actor : MonoBehaviour
     {
         await UniTask.Delay(TimeSpan.FromSeconds(_boredTimerSeconds), cancellationToken: _boredCancellationToken.Token);
         _animator.SetBool(BoredParameter, true);
+    }
+
+    public void SetMovementDestination(Vector3 destination)
+    {
+        _navMeshAgent.SetDestination(destination);
     }
 }
