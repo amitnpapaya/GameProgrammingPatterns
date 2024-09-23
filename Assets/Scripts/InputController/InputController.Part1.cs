@@ -5,6 +5,8 @@
 // {
 //     public partial class InputController : MonoBehaviour
 //     {
+//         private Actor _currentlySelectedActor;
+//         
 //         void Update()
 //         {
 //             var leftClick = Input.GetMouseButtonDown(0);

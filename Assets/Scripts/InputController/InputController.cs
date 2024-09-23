@@ -8,8 +8,6 @@ namespace InputController
     {
         [SerializeField] private Camera _controlCamera;
         private IAudioManager _audioManager;
-
-        private Actor _currentlySelectedActor;
         
         [Inject]
         public void Construct(IAudioManager audioManager)
