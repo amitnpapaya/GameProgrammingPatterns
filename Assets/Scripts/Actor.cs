@@ -3,15 +3,16 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 
 public class Actor : MonoBehaviour
 {
     [SerializeField] private Animator _animator;
     [SerializeField] private NavMeshAgent _navMeshAgent;
     [SerializeField] private float _boredTimerSeconds;
-    [SerializeField] private Selection _selection;
-    
-    private CancellationTokenSource _boredCancellationToken = new();
+    [FormerlySerializedAs("_selection")] [SerializeField] private SelectionIndicator _selectionIndicator;
+
+    private CancellationTokenSource _boredCancellationToken;    
     
     private static readonly int BoredParameter = Animator.StringToHash("Bored");
     private static readonly int SpeedParameter = Animator.StringToHash("Speed");
@@ -27,7 +28,7 @@ public class Actor : MonoBehaviour
     public void SetSelected(bool selected)
     {
         _selected = selected;
-        _selection.gameObject.SetActive(selected);
+        _selectionIndicator.gameObject.SetActive(selected);
     }
 
     private void Update()

@@ -3,7 +3,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Selection : MonoBehaviour
+public class SelectionIndicator : MonoBehaviour
 {
     [SerializeField] private Image _selection;
     private Transform _selectionTransform;
