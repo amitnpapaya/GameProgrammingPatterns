@@ -10,6 +10,7 @@ public class Actor : MonoBehaviour
     [SerializeField] private Animator _animator;
     [SerializeField] private NavMeshAgent _navMeshAgent;
     [SerializeField] private float _boredTimerSeconds;
+    [SerializeField] private string _actorId;
     [FormerlySerializedAs("_selection")] [SerializeField] private SelectionIndicator _selectionIndicator;
 
     private CancellationTokenSource _boredCancellationToken;    

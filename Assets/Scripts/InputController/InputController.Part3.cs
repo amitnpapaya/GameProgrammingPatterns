@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Audio;
 using UnityEngine;
 
@@ -8,95 +10,133 @@ namespace InputController
     {
         private Action _leftClickCommand;
         private Action _rightClickCommand;
+        
+        // dependencies we should normally inject
+        private UnitSelectionBox _canvasSelectionBox;
+        private List<Actor> _actors;
+        private Camera _camera;
+        
+        private Vector2 _selectionStartPosition;
+        private Vector2 _selectionEndPosition;
+        private Rect _selectionRect;
 
         private void Awake()
         {
+            _camera = FindObjectOfType<Camera>();
+            _canvasSelectionBox = FindObjectOfType<UnitSelectionBox>();
+            _canvasSelectionBox.gameObject.SetActive(true);
+            SetCanvasSelectionBox(Vector2.zero, Vector2.zero);
+                
+            _actors = FindObjectsOfType<Actor>().ToList();
             MapControls();
         }
-         
+
+        private void Start()
+        {
+            DrawVisual();
+        }
+
         private void MapControls()
         {
-            // TODO: READ FROM AN INPUT FILE / CONFIGURATION / USE NEW INPUT SYSTEM
-            _leftClickCommand = MouseMoveCommand;
-            _rightClickCommand = MouseSelectDeselectCommand;
+            
         }
         
         void Update()
         {
-            var leftClick = Input.GetMouseButtonDown(0);
-            var rightClick = Input.GetMouseButtonDown(1);
+            var leftClickDown = Input.GetMouseButtonDown(0);
+            var leftClickUp = Input.GetMouseButtonUp(0);
+            var leftClicking = Input.GetMouseButton(0);
+            var rightClickDown = Input.GetMouseButtonDown(1);
+            var rightClickUp = Input.GetMouseButtonUp(1);
+            var rightClicking = Input.GetMouseButton(1);
         
-            if (!leftClick && !rightClick) 
-                return;
-            
-            if (leftClick)
+            if (leftClickDown)
             {
-                _leftClickCommand?.Invoke();
+                _selectionStartPosition = Input.mousePosition;
             }
-        
-            else if (rightClick)
+            if (leftClicking)
             {
-                _rightClickCommand?.Invoke();
+                _selectionEndPosition = Input.mousePosition;
+                _selectionRect = new Rect();
+                DrawVisual();
+                SetSelectionRect();
+            }
+            if (leftClickUp)
+            {
+                SelectActors();
+                _selectionStartPosition = Vector2.zero;
+                _selectionEndPosition = Vector2.zero;
+                DrawVisual();
+            }
+            
+            if (rightClickDown)
+            {
+                
+            }
+            if (rightClicking)
+            {
+                
+            }
+            if (rightClickUp)
+            {
+                
             }
         }
-        
-        private void MouseSelectDeselectCommand()
+
+        private void DrawVisual()
         {
-            var raycastResult = Raycast();
-            if (!raycastResult.success)
-                return;
-                
-            if (raycastResult.hit.collider.gameObject.CompareTag("PlayerActor"))
+            var boxCenter = (_selectionStartPosition + _selectionEndPosition) / 2;
+            var boxSize = new Vector2(Mathf.Abs(_selectionStartPosition.x - _selectionEndPosition.x),
+                Mathf.Abs(_selectionStartPosition.y - _selectionEndPosition.y));
+            
+            SetCanvasSelectionBox(boxCenter, boxSize);
+        }
+
+        private void SetCanvasSelectionBox(Vector2 boxCenter, Vector2 boxSize)
+        {
+            _canvasSelectionBox.RectTransform.position = boxCenter;
+            _canvasSelectionBox.RectTransform.sizeDelta = boxSize;
+        }
+
+        private void SetSelectionRect()
+        {
+            if (Input.mousePosition.x < _selectionStartPosition.x)
             {
-                var selectedActor = raycastResult.hit.collider.gameObject.GetComponent<Actor>();
-                if (selectedActor != null)
-                {
-                    SelectActorCommand(selectedActor);
-                }
+                _selectionRect.xMin = Input.mousePosition.x;
+                _selectionRect.xMax = _selectionStartPosition.x;
             }
             else
             {
-                UnselectActorCommand();
+                _selectionRect.xMin = _selectionStartPosition.x;
+                _selectionRect.xMax = Input.mousePosition.x;
+            }
+ 
+ 
+            if (Input.mousePosition.y < _selectionStartPosition.y)
+            {
+                _selectionRect.yMin = Input.mousePosition.y;
+                _selectionRect.yMax = _selectionStartPosition.y;
+            }
+            else
+            {
+                _selectionRect.yMin = _selectionStartPosition.y;
+                _selectionRect.yMax = Input.mousePosition.y;
             }
         }
         
-        private void MouseMoveCommand()
+        void SelectActors()
         {
-            var raycastResult = Raycast();
-            if (!raycastResult.success)
-                return;
-                
-            var destinationVector = raycastResult.hit.point;
-            MoveActorCommand(destinationVector);
-        }
-
-        private (bool success, RaycastHit hit) Raycast()
-        {
-            var ray = _controlCamera.ScreenPointToRay(Input.mousePosition);
-            var result = Physics.Raycast(ray, out var hit);
-            return (result, hit);
-        }
-
-        private void SelectActorCommand(Actor selectedActor)
-        {
-            _currentlySelectedActor = selectedActor;
-            _currentlySelectedActor.SetSelected(true);
-            _audioManager.PlaySound(SoundType.Select);
-        }
-        
-        private void UnselectActorCommand()
-        {
-            if (_currentlySelectedActor == null) return;
-            _currentlySelectedActor.SetSelected(false);
-            _currentlySelectedActor = null;
-        }
-        
-        private void MoveActorCommand(Vector3 destination)
-        {
-            if (_currentlySelectedActor != null)
+            foreach (var actor in _actors)
             {
-                _currentlySelectedActor.SetMovementDestination(destination);   
-                _audioManager.PlaySound(SoundType.Move);
+                if (_selectionRect.Contains(_camera.WorldToScreenPoint(actor.transform.position)))
+                {
+                    actor.SetSelected(true);
+                    _audioManager.PlaySound(SoundType.Select);
+                }
+                else
+                {
+                    actor.SetSelected(false);
+                }
             }
         }
     }
