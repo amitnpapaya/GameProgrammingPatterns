@@ -8,6 +8,15 @@ namespace InputController
 {
     public partial class InputController : MonoBehaviour
     {
+        // dependencies we should normally inject
+        private UnitSelectionBox _canvasSelectionBox;
+        private List<Actor> _actors;
+        private Camera _camera;
+        
+        // configuration
+        private readonly float _minimalSelectBoxSize = 3f;
+        
+        // actions => command mapping
         private Action _leftDownClickCommand;
         private Action _leftClickCommand;
         private Action _leftUpClickCommand;
@@ -15,12 +24,7 @@ namespace InputController
         private Action _rightClickCommand;
         private Action _rightUpClickCommand;
         
-        // dependencies we should normally inject
-        private UnitSelectionBox _canvasSelectionBox;
-        private List<Actor> _actors;
-        private Camera _camera;
-        
-        private readonly float _minimalSelectBoxSize = 3f;
+        // stateful vars
         private Vector2 _selectionStartPosition;
         private Vector2 _selectionEndPosition;
         private Rect _selectionRect;
@@ -42,7 +46,7 @@ namespace InputController
             _leftClickCommand = SelectClickCommand;
             _leftUpClickCommand = SelectUpClickCommand;
             
-            _rightClickCommand = MoveDownClickCommand;
+            _rightDownClickCommand = MoveDownClickCommand;
         }
 
         private void Start()
