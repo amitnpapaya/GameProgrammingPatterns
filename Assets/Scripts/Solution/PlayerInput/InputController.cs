@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Audio;
+using Solution.Command;
 using Solution.Commands;
 using Solution.Factory;
 using UnityEngine;
@@ -39,6 +40,8 @@ namespace Solution.PlayerInput
         private IFactory<SetActorSelectedCommand> _setActorSelectedCommandFactory;
         private IFactory<SetActorsSelectedCommand> _setActorsSelectedCommandFactory;
 
+        private CommandsQueue _playerCommandsQueue;
+        
         [Inject]
         public void Construct(IAudioManager audioManager, 
             IFactory<MoveActorCommand> moveActorCommandFactory,
@@ -49,6 +52,8 @@ namespace Solution.PlayerInput
             _moveActorCommandFactory = moveActorCommandFactory;
             _setActorSelectedCommandFactory = setActorSelectedCommandFactory;
             _setActorsSelectedCommandFactory = setActorsSelectedCommandFactory;
+
+            _playerCommandsQueue = new CommandsQueue(10);
         }
 
         private void Awake()
@@ -114,6 +119,15 @@ namespace Solution.PlayerInput
             {
                 _rightUpClickCommand?.Invoke();
             }
+
+            if (Input.GetKeyDown(KeyCode.U))
+            {
+                _playerCommandsQueue.Undo();
+            }
+            if (Input.GetKeyDown(KeyCode.I))
+            {
+                _playerCommandsQueue.Redo();
+            }
         }
 
         private void SelectDownClickCommand()
@@ -154,7 +168,7 @@ namespace Solution.PlayerInput
             var selectedActors = _actors.Where(actor => actor.Selected);
             foreach (var selectedActor in selectedActors)
             {
-                _moveActorCommandFactory.Create().Execute((selectedActor, destinationVector));
+                _moveActorCommandFactory.Create().AddToQueue(_playerCommandsQueue).Execute((selectedActor, destinationVector));
             }
 
             _audioManager.PlaySound(SoundType.Move);

@@ -76,6 +76,13 @@ public class Actor : MonoBehaviour
 
     public void SetMovementDestination(Vector3 destination)
     {
+        _navMeshAgent.isStopped = false;
         _navMeshAgent.SetDestination(destination);
+    }
+
+    public void Halt()
+    {
+        _navMeshAgent.velocity = Vector3.zero;
+        _navMeshAgent.isStopped = true;
     }
 }

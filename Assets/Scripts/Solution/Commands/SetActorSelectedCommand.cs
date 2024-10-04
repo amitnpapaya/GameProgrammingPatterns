@@ -6,6 +6,10 @@ namespace Solution.Commands
     public class SetActorSelectedCommand : Command<SetActorSelectedCommand, (Actor actor, bool selectedState)>
     {
         private readonly IAudioManager _audioManager;
+        
+        private Actor _actor;
+        private bool _selectedState;
+        private bool _originalSelectedState;
 
         public SetActorSelectedCommand(IAudioManager audioManager)
         {
@@ -14,9 +18,23 @@ namespace Solution.Commands
         
         public override void Execute((Actor actor, bool selectedState) arguments)
         {
-            arguments.actor.SetSelected(arguments.selectedState);
-            if (arguments.selectedState)
+            _actor = arguments.actor;
+            _selectedState = arguments.selectedState;
+            _originalSelectedState = _actor.Selected;
+            
+            _actor.SetSelected(_selectedState);
+            if (_selectedState)
                 _audioManager.PlaySound(SoundType.Select);
+        }
+
+        public override void Undo()
+        {
+            _actor.SetSelected(_originalSelectedState);
+        }
+
+        public override void Redo()
+        {
+            _actor.SetSelected(_selectedState);
         }
     }
 }

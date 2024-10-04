@@ -1,23 +1,30 @@
 using Cysharp.Threading.Tasks;
+using UnityEditor;
 
 namespace Solution.Command
 {
-    public interface ICommand
+    public interface ICommandBase
+    {
+        void Undo();
+        void Redo();
+    }
+    
+    public interface ICommand : ICommandBase
     {
         UniTask Execute();
     }
 
-    public interface ICommand<TArg>
+    public interface ICommand<TArg> : ICommandBase
     {
         void Execute(TArg arguments);
     }
 
-    public interface ICommandWithResult<TRes>
+    public interface ICommandWithResult<TRes> : ICommandBase
     {
         UniTask<TRes> Execute();
     }
 
-    public interface ICommandWithResult<TArg, TRes>
+    public interface ICommandWithResult<TArg, TRes> : ICommandBase
     {
         UniTask<TRes> Execute(TArg arguments);
     }
