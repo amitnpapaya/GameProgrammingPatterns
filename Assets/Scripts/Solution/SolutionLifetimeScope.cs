@@ -1,6 +1,6 @@
 using Audio;
-using Factory;
 using Solution.Commands;
+using Solution.Factory;
 using Solution.PlayerInput;
 using UnityEngine;
 using VContainer;
@@ -19,6 +19,8 @@ namespace Solution
             builder.RegisterComponent(_inputController);
             
             builder.RegisterFactory<MoveActorCommand, MoveActorCommand.Factory>();
+            builder.RegisterFactory<SetActorSelectedCommand, SetActorSelectedCommand.Factory>();
+            builder.RegisterFactory<SetActorsSelectedCommand, SetActorsSelectedCommand.Factory>();
         }
     }
 }

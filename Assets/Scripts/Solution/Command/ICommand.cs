@@ -1,6 +1,6 @@
 using Cysharp.Threading.Tasks;
 
-namespace Command
+namespace Solution.Command
 {
     public interface ICommand
     {

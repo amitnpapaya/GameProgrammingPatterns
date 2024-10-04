@@ -1,6 +1,6 @@
 using VContainer;
 
-namespace Factory
+namespace Solution.Factory
 {
     public class PlaceholderFactory<T> : IFactory<T> where T : class
     {

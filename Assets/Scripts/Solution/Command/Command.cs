@@ -1,8 +1,8 @@
 using Cysharp.Threading.Tasks;
-using Factory;
+using Solution.Factory;
 using VContainer;
 
-namespace Command
+namespace Solution.Command
 {
     public abstract class Command<T> : ICommand where T: Command<T>
     {

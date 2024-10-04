@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Audio;
-using Factory;
 using Solution.Commands;
+using Solution.Factory;
 using UnityEngine;
 using VContainer;
 
@@ -36,12 +36,19 @@ namespace Solution.PlayerInput
 
         // factories
         private IFactory<MoveActorCommand> _moveActorCommandFactory;
+        private IFactory<SetActorSelectedCommand> _setActorSelectedCommandFactory;
+        private IFactory<SetActorsSelectedCommand> _setActorsSelectedCommandFactory;
 
         [Inject]
-        public void Construct(IAudioManager audioManager, IFactory<MoveActorCommand> moveActorCommandFactory)
+        public void Construct(IAudioManager audioManager, 
+            IFactory<MoveActorCommand> moveActorCommandFactory,
+            IFactory<SetActorSelectedCommand> setActorSelectedCommandFactory,
+            IFactory<SetActorsSelectedCommand> setActorsSelectedCommandFactory)
         {
             _audioManager = audioManager;
             _moveActorCommandFactory = moveActorCommandFactory;
+            _setActorSelectedCommandFactory = setActorSelectedCommandFactory;
+            _setActorsSelectedCommandFactory = setActorsSelectedCommandFactory;
         }
 
         private void Awake()
@@ -136,6 +143,22 @@ namespace Solution.PlayerInput
                 SelectActorWithRaycast();
             }
         }
+        
+        private void MoveDownClickCommand()
+        {
+            var raycastResult = Raycast();
+            if (!raycastResult.success)
+                return;
+
+            var destinationVector = raycastResult.hit.point;
+            var selectedActors = _actors.Where(actor => actor.Selected);
+            foreach (var selectedActor in selectedActors)
+            {
+                _moveActorCommandFactory.Create().Execute((selectedActor, destinationVector));
+            }
+
+            _audioManager.PlaySound(SoundType.Move);
+        }
 
         private void SelectActorWithRaycast()
         {
@@ -148,13 +171,13 @@ namespace Solution.PlayerInput
                 var selectedActor = raycastResult.hit.collider.gameObject.GetComponent<Actor>();
                 if (selectedActor != null)
                 {
-                    SetActorsSelectionState(_actors, false);
-                    SetActorsSelectionState(selectedActor, true);
+                    _setActorsSelectedCommandFactory.Create().Execute((_actors, false));
+                    _setActorSelectedCommandFactory.Create().Execute((selectedActor, true));
                 }
             }
             else
             {
-                SetActorsSelectionState(_actors, false);
+                _setActorsSelectedCommandFactory.Create().Execute((_actors, false));
             }
         }
 
@@ -212,43 +235,8 @@ namespace Solution.PlayerInput
                 _selectionRect.Contains(_controlCamera.WorldToScreenPoint(actor.transform.position))).ToArray();
             var unselectedActors = _actors.Except(selectedActors);
 
-            SetActorsSelectionState(selectedActors, true);
-            SetActorsSelectionState(unselectedActors, false);
-        }
-
-        private void SetActorsSelectionState(Actor actor, bool selectionState)
-        {
-            actor.SetSelected(selectionState);
-            if (selectionState)
-                _audioManager.PlaySound(SoundType.Select);
-        }
-
-        private void SetActorsSelectionState(IEnumerable<Actor> actors, bool selectionState)
-        {
-            foreach (var actor in actors)
-            {
-                actor.SetSelected(selectionState);
-            }
-
-            if (selectionState)
-                _audioManager.PlaySound(SoundType.Select);
-        }
-
-        private void MoveDownClickCommand()
-        {
-            var raycastResult = Raycast();
-            if (!raycastResult.success)
-                return;
-
-            var destinationVector = raycastResult.hit.point;
-            var selectedActors = _actors.Where(actor => actor.Selected);
-            foreach (var selectedActor in selectedActors)
-            {
-                var command = _moveActorCommandFactory.Create();
-                command.Execute((selectedActor, destinationVector));
-            }
-
-            _audioManager.PlaySound(SoundType.Move);
+            _setActorsSelectedCommandFactory.Create().Execute((selectedActors, true));
+            _setActorsSelectedCommandFactory.Create().Execute((unselectedActors, false));
         }
     }
 }

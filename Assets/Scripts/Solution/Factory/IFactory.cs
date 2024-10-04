@@ -1,4 +1,4 @@
-namespace Factory
+namespace Solution.Factory
 {
     public interface IFactory<T>
     {

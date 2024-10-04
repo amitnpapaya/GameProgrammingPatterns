@@ -1,4 +1,4 @@
-using Command;
+using Solution.Command;
 using UnityEngine;
 
 namespace Solution.Commands
