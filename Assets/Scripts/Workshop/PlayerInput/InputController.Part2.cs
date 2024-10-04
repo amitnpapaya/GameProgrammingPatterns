@@ -2,7 +2,7 @@
 // using Audio;
 // using UnityEngine;
 //
-// namespace InputController
+// namespace Workshop.PlayerInput
 // {
 //     public partial class InputController : MonoBehaviour
 //     {

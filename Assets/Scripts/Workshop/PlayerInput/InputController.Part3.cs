@@ -4,14 +4,13 @@ using System.Linq;
 using Audio;
 using UnityEngine;
 
-namespace InputController
+namespace Workshop.PlayerInput
 {
     public partial class InputController : MonoBehaviour
     {
         // dependencies we should normally inject
         private UnitSelectionBox _canvasSelectionBox;
         private List<Actor> _actors;
-        private Camera _camera;
         
         // configuration
         private readonly float _minimalSelectBoxSize = 3f;
@@ -31,7 +30,6 @@ namespace InputController
 
         private void Awake()
         {
-            _camera = FindObjectOfType<Camera>();
             _canvasSelectionBox = FindObjectOfType<UnitSelectionBox>();
             _canvasSelectionBox.gameObject.SetActive(true);
             SetCanvasSelectionBox(Vector2.zero, Vector2.zero);
@@ -193,7 +191,7 @@ namespace InputController
         void SelectActorsInSelectionRect()
         {
             var selectedActors = _actors.Where(actor =>
-                _selectionRect.Contains(_camera.WorldToScreenPoint(actor.transform.position))).ToArray();
+                _selectionRect.Contains(_controlCamera.WorldToScreenPoint(actor.transform.position))).ToArray();
             var unselectedActors = _actors.Except(selectedActors);
             
             SetActorsSelectionState(selectedActors, true);
