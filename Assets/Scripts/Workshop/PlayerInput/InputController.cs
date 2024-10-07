@@ -8,11 +8,13 @@ namespace Workshop.PlayerInput
     {
         [SerializeField] private Camera _controlCamera;
         private IAudioManager _audioManager;
+        private UnitSelectionBox _canvasSelectionBox;
         
         [Inject]
-        public void Construct(IAudioManager audioManager)
+        public void Construct(IAudioManager audioManager, UnitSelectionBox unitSelectionBox)
         {
             _audioManager = audioManager;
+            _canvasSelectionBox = unitSelectionBox;
         }
     }
 }

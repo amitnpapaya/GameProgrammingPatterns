@@ -44,11 +44,13 @@ namespace Solution.PlayerInput
         
         [Inject]
         public void Construct(IAudioManager audioManager, 
+            UnitSelectionBox unitSelectionBox,
             IFactory<MoveActorCommand> moveActorCommandFactory,
             IFactory<SetActorSelectedCommand> setActorSelectedCommandFactory,
             IFactory<SetActorsSelectedCommand> setActorsSelectedCommandFactory)
         {
             _audioManager = audioManager;
+            _canvasSelectionBox = unitSelectionBox;
             _moveActorCommandFactory = moveActorCommandFactory;
             _setActorSelectedCommandFactory = setActorSelectedCommandFactory;
             _setActorsSelectedCommandFactory = setActorsSelectedCommandFactory;
@@ -58,7 +60,6 @@ namespace Solution.PlayerInput
 
         private void Awake()
         {
-            _canvasSelectionBox = FindObjectOfType<UnitSelectionBox>();
             _canvasSelectionBox.gameObject.SetActive(true);
             SetCanvasSelectionBox(Vector2.zero, Vector2.zero);
 

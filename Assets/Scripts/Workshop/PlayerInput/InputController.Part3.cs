@@ -9,7 +9,6 @@
 //     public partial class InputController : MonoBehaviour
 //     {
 //         // dependencies we should normally inject
-//         private UnitSelectionBox _canvasSelectionBox;
 //         private List<Actor> _actors;
 //         
 //         // configuration
@@ -30,7 +29,6 @@
 //
 //         private void Awake()
 //         {
-//             _canvasSelectionBox = FindObjectOfType<UnitSelectionBox>();
 //             _canvasSelectionBox.gameObject.SetActive(true);
 //             SetCanvasSelectionBox(Vector2.zero, Vector2.zero);
 //                 
