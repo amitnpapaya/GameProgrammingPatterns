@@ -12,16 +12,12 @@ namespace Workshop.PlayerInput
             var leftClick = Input.GetMouseButtonDown(0);
             var rightClick = Input.GetMouseButtonDown(1);
         
-            if (!leftClick && !rightClick) 
-                return;
-        
-            var ray = _controlCamera.ScreenPointToRay(Input.mousePosition);
-            
-            if (!Physics.Raycast(ray, out var hit)) 
-                return;
-    
             if (leftClick)
             {
+                var ray = _controlCamera.ScreenPointToRay(Input.mousePosition);
+                if (!Physics.Raycast(ray, out var hit)) 
+                    return;
+                
                 if (hit.collider.gameObject.CompareTag("PlayerActor"))
                 {
                     var selectedActor = hit.collider.gameObject.GetComponent<Actor>();
@@ -44,6 +40,10 @@ namespace Workshop.PlayerInput
         
             else if (rightClick)
             {
+                var ray = _controlCamera.ScreenPointToRay(Input.mousePosition);
+                if (!Physics.Raycast(ray, out var hit)) 
+                    return;
+                
                 if (_currentlySelectedActor != null)
                 {
                     var destinationVector = hit.point;
