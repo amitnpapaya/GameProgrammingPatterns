@@ -23,12 +23,12 @@ namespace Solution.PlayerInput
         private readonly float _minimalSelectBoxSize = 3f;
 
         // actions => command mapping
-        private Action _leftDownClickCommand;
-        private Action _leftClickCommand;
-        private Action _leftUpClickCommand;
-        private Action _rightDownClickCommand;
-        private Action _rightClickCommand;
-        private Action _rightUpClickCommand;
+        private Action _leftDownClick;
+        private Action _leftClick;
+        private Action _leftUpClick;
+        private Action _rightDownClick;
+        private Action _rightClick;
+        private Action _rightUpClick;
 
         // stateful vars
         private Vector2 _selectionStartPosition;
@@ -69,11 +69,11 @@ namespace Solution.PlayerInput
 
         private void MapControls()
         {
-            _leftDownClickCommand = SelectDownClickCommand;
-            _leftClickCommand = SelectClickCommand;
-            _leftUpClickCommand = SelectUpClickCommand;
+            _leftDownClick = OnSelectDownClick;
+            _leftClick = OnSelectClick;
+            _leftUpClick = OnSelectUpClick;
 
-            _rightDownClickCommand = MoveDownClickCommand;
+            _rightDownClick = OnMoveDownClick;
         }
 
         private void Start()
@@ -93,32 +93,32 @@ namespace Solution.PlayerInput
 
             if (leftClickDown)
             {
-                _leftDownClickCommand?.Invoke();
+                _leftDownClick?.Invoke();
             }
 
             if (leftClicking)
             {
-                _leftClickCommand?.Invoke();
+                _leftClick?.Invoke();
             }
 
             if (leftClickUp)
             {
-                _leftUpClickCommand?.Invoke();
+                _leftUpClick?.Invoke();
             }
 
             if (rightClickDown)
             {
-                _rightDownClickCommand?.Invoke();
+                _rightDownClick?.Invoke();
             }
 
             if (rightClicking)
             {
-                _rightClickCommand?.Invoke();
+                _rightClick?.Invoke();
             }
 
             if (rightClickUp)
             {
-                _rightUpClickCommand?.Invoke();
+                _rightUpClick?.Invoke();
             }
 
             if (Input.GetKeyDown(KeyCode.U))
@@ -131,12 +131,12 @@ namespace Solution.PlayerInput
             }
         }
 
-        private void SelectDownClickCommand()
+        private void OnSelectDownClick()
         {
             _selectionStartPosition = Input.mousePosition;
         }
 
-        private void SelectClickCommand()
+        private void OnSelectClick()
         {
             _selectionEndPosition = Input.mousePosition;
             _selectionRect = new Rect();
@@ -144,7 +144,7 @@ namespace Solution.PlayerInput
             SetSelectionRect();
         }
 
-        private void SelectUpClickCommand()
+        private void OnSelectUpClick()
         {
             if (_selectionRect.size.magnitude > _minimalSelectBoxSize)
             {
@@ -159,7 +159,7 @@ namespace Solution.PlayerInput
             }
         }
         
-        private void MoveDownClickCommand()
+        private void OnMoveDownClick()
         {
             var raycastResult = Raycast();
             if (!raycastResult.success)

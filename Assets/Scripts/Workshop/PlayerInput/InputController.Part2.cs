@@ -8,8 +8,8 @@
 //     {
 //         private Actor _currentlySelectedActor;
 //         
-//         private Action _leftClickCommand;
-//         private Action _rightClickCommand;
+//         private Action _leftClick;
+//         private Action _rightClick;
 //
 //         private void Awake()
 //         {
@@ -19,8 +19,8 @@
 //         private void MapControls()
 //         {
 //             // TODO: READ FROM AN INPUT FILE / CONFIGURATION / USE NEW INPUT SYSTEM
-//             _leftClickCommand = MoveCommand;
-//             _rightClickCommand = SelectDeselectCommand;
+//             _leftClick = Move;
+//             _rightClick = SelectDeselect;
 //         }
 //         
 //         void Update()
@@ -33,16 +33,16 @@
 //             
 //             if (leftClick)
 //             {
-//                 _leftClickCommand?.Invoke();
+//                 _leftClick?.Invoke();
 //             }
 //         
 //             else if (rightClick)
 //             {
-//                 _rightClickCommand?.Invoke();
+//                 _rightClick?.Invoke();
 //             }
 //         }
 //         
-//         private void SelectDeselectCommand()
+//         private void SelectDeselect()
 //         {
 //             var raycastResult = Raycast();
 //             if (!raycastResult.success)
@@ -62,7 +62,7 @@
 //             }
 //         }
 //         
-//         private void MoveCommand()
+//         private void Move()
 //         {
 //             var raycastResult = Raycast();
 //             if (!raycastResult.success)
