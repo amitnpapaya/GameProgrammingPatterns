@@ -16,23 +16,49 @@ namespace Shine
     {
         public static Tweener TweenMove(this Transform target, Vector3 start, Vector3 end, float duration, EaseType easing, Action onComplete = null)
         {
-            return Tweener.Get(target.gameObject, t => target.position = Vector3.Lerp(start, end, Tweener.GetEasingFunction(easing)(t)), duration, onComplete);
+            return TweenProperty
+                (target, start, end, duration, easing, onComplete, (t, value) => target.position = value);
         }
 
         public static Tweener TweenScale(this Transform target, Vector3 start, Vector3 end, float duration, EaseType easing, Action onComplete = null)
         {
-            return Tweener.Get(target.gameObject, t => target.localScale = Vector3.Lerp(start, end, Tweener.GetEasingFunction(easing)(t)), duration, onComplete);
+            return TweenProperty
+                (target, start, end, duration, easing, onComplete, (t, value) => target.localScale = value);
         }
 
         public static Tweener TweenColor(this Renderer target, Color start, Color end, float duration, EaseType easing, Action onComplete = null)
         {
-            return Tweener.Get(target.gameObject, t => target.material.color = Color.Lerp(start, end, Tweener.GetEasingFunction(easing)(t)), duration, onComplete);
+            return TweenProperty
+                (target, start, end, duration, easing, onComplete, (t, value) => target.material.color = value);
+        }
+
+        private static Tweener TweenProperty<T>(Component target, T start, T end, float duration, EaseType easing,
+            Action onComplete, Action<Tweener, T> updateAction)
+        {
+            return Tweener.Get
+            (
+                target,
+                duration,
+                Tweener.GetEasingFunction(easing),
+                onComplete,
+                (t) => updateAction(null, Lerp(start, end, t))
+            );
+        }
+
+        private static T Lerp<T>(T start, T end, float t)
+        {
+            if (typeof(T) == typeof(Vector3))
+                return (T)(object)Vector3.Lerp((Vector3)(object)start, (Vector3)(object)end, t);
+            if (typeof(T) == typeof(Color))
+                return (T)(object)Color.Lerp((Color)(object)start, (Color)(object)end, t);
+
+            throw new InvalidOperationException($"Lerp is not supported for type {typeof(T)}");
         }
     }
 
     public abstract class Tween
     {
-        public GameObject Target { get; protected set; }
+        public Component Target { get; protected set; }
         public abstract UniTask Play(CancellationToken cancellationToken = default);
         public abstract void Cancel();
         public abstract void Pause();
@@ -45,6 +71,7 @@ namespace Shine
         private static readonly Queue<Tweener> Pool = new();
 
         private Action<float> _onUpdate;
+        private Func<float, float> _easingFunction;
         private float _duration;
         public float Duration => _duration;
         private Action _onComplete;
@@ -53,20 +80,21 @@ namespace Shine
         private bool _isCanceled;
 
         private Tweener() { }
-        
-        public static Tweener Get(GameObject target, Action<float> onUpdate, float duration, Action onComplete)
+
+        public static Tweener Get(Component target, float duration, Func<float, float> easingFunction, Action onComplete, Action<float> onUpdate)
         {
             var tweener = Pool.Count > 0 ? Pool.Dequeue() : new Tweener();
-            tweener.Initialize(target, onUpdate, duration, onComplete);
+            tweener.Initialize(target, duration, easingFunction, onComplete, onUpdate);
             return tweener;
         }
 
-        private void Initialize(GameObject target, Action<float> onUpdate, float duration, Action onComplete)
+        private void Initialize(Component target, float duration, Func<float, float> easingFunction, Action onComplete, Action<float> onUpdate)
         {
             Target = target;
-            _onUpdate = onUpdate;
             _duration = duration;
+            _easingFunction = easingFunction;
             _onComplete = onComplete;
+            _onUpdate = onUpdate;
             _elapsed = 0;
             _isPaused = false;
             _isCanceled = false;
@@ -84,7 +112,7 @@ namespace Shine
                 if (!_isPaused)
                 {
                     _elapsed += Time.deltaTime;
-                    _onUpdate?.Invoke(Mathf.Clamp01(_elapsed / _duration));
+                    _onUpdate?.Invoke(_easingFunction(Mathf.Clamp01(_elapsed / _duration)));
                 }
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
             }
@@ -99,35 +127,35 @@ namespace Shine
         public override void JumpTo(float time)
         {
             _elapsed = Mathf.Clamp(time, 0, _duration);
-            _onUpdate?.Invoke(_elapsed / _duration);
+            _onUpdate?.Invoke(_easingFunction(_elapsed / _duration));
         }
 
         private void ReleaseToPool()
         {
             _onUpdate = null;
             _onComplete = null;
+            _easingFunction = null;
             Target = null;
             Pool.Enqueue(this);
         }
-        
-        public static Func<float, float> GetEasingFunction(EaseType ease)
-        {
-            return ease switch
-            {
-                EaseType.Linear => t => t,
-                EaseType.EaseInOutQuad => t => t < 0.5f ? 2 * t * t : 1 - Mathf.Pow(-2 * t + 2, 2) / 2,
-                _ => t => t
-            };
-        }
-    }
 
+        private static readonly Dictionary<EaseType, Func<float, float>> EasingFunctions = new()
+        {
+            { EaseType.Linear, t => t },
+            { EaseType.EaseInOutQuad, t => t < 0.5f ? 2 * t * t : 1 - Mathf.Pow(-2 * t + 2, 2) / 2 }
+        };
+
+        public static Func<float, float> GetEasingFunction(EaseType ease) => EasingFunctions[ease];
+    }
+    
     public class Sequence : Tween
     {
         private static readonly Queue<Sequence> Pool = new();
-        private readonly Queue<Tween> _tweens = new();
+        internal readonly List<Tween> _tweens = new();
         private bool _isPaused;
         private bool _isCanceled;
-        private float _totalDuration;
+        private float _elapsedTime;
+        private int _currentTweenIndex;
 
         private Sequence() { }
 
@@ -136,27 +164,26 @@ namespace Shine
             return Pool.Count > 0 ? Pool.Dequeue() : new Sequence();
         }
 
-        public Sequence Append(Tween tween)
-        {
-            _tweens.Enqueue(tween);
-            _totalDuration += tween is Tweener t ? t.Duration : 0;
-            return this;
-        }
-
         public override async UniTask Play(CancellationToken cancellationToken = default)
         {
-            while (_tweens.Count > 0)
+            _currentTweenIndex = 0;
+            _elapsedTime = 0;
+
+            while (_currentTweenIndex < _tweens.Count)
             {
                 if (_isCanceled || cancellationToken.IsCancellationRequested)
                 {
                     ReleaseToPool();
                     return;
                 }
+
                 if (!_isPaused)
                 {
-                    var tween = _tweens.Dequeue();
+                    var tween = _tweens[_currentTweenIndex];
                     await tween.Play(cancellationToken);
+                    _currentTweenIndex++;
                 }
+
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
             }
             ReleaseToPool();
@@ -174,17 +201,20 @@ namespace Shine
 
         public override void JumpTo(float time)
         {
-            float elapsedTime = 0;
+            _elapsedTime = 0;
+            _currentTweenIndex = 0;
+
             foreach (var tween in _tweens)
             {
                 if (tween is Tweener t)
                 {
-                    if (elapsedTime + t.Duration >= time)
+                    if (_elapsedTime + t.Duration >= time)
                     {
-                        t.JumpTo(time - elapsedTime);
+                        t.JumpTo(time - _elapsedTime);
                         return;
                     }
-                    elapsedTime += t.Duration;
+                    _elapsedTime += t.Duration;
+                    _currentTweenIndex++;
                 }
             }
         }
@@ -194,7 +224,17 @@ namespace Shine
             _tweens.Clear();
             _isPaused = false;
             _isCanceled = false;
+            _currentTweenIndex = 0;
             Pool.Enqueue(this);
+        }
+    }
+    
+    public static class SequenceExtensions
+    {
+        public static Sequence Append(this Sequence sequence, Tween tween)
+        {
+            sequence._tweens.Add(tween);
+            return sequence;
         }
     }
 }
