@@ -312,7 +312,7 @@ namespace Shine
                 if (_updates.Count > 0 && !_isPaused)
                 {
                     var latestData = _updates[^1];
-                    Target.transform.position = Vector3.Lerp(Target.transform.position, latestData.Position, 0.1f);
+                    Target.transform.position = Vector3.Lerp(Target.transform.position, latestData.Position, Time.deltaTime);
                 }
 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
