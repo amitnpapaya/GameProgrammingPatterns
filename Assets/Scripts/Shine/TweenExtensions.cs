@@ -237,4 +237,108 @@ namespace Shine
             return sequence;
         }
     }
+    
+    public struct RemoteTweenData
+    {
+        public Vector3 Position;
+        public float Time;
+    }
+
+    public static class RemoteTweenSystem
+    {
+        private static readonly Dictionary<string, ServerSyncedTween> ActiveRemoteTweens = new();
+
+        public static void ListenToRemoteTween(string remoteObjectID, Action<RemoteTweenData> remoteTweenData)
+        {
+            // the external, provided method, maybe extern?
+        }
+        
+        public static void RegisterToRemoteTween(Transform localTarget, string remoteObjectID)
+        {
+            if (!ActiveRemoteTweens.TryGetValue(remoteObjectID, out var tween))
+            {
+                tween = ServerSyncedTween.Get(localTarget);
+                ActiveRemoteTweens[remoteObjectID] = tween;
+                ListenToRemoteTween(remoteObjectID, tween.OnServerUpdate);
+            }
+        }
+    }
+
+    public class ServerSyncedTween : Tween
+    {
+        private static readonly Queue<ServerSyncedTween> Pool = new();
+        private List<RemoteTweenData> _updates = new();
+        private bool _isPaused;
+        private bool _isCanceled;
+        private float _startTime;
+
+        private ServerSyncedTween() { }
+
+        public static ServerSyncedTween Get(Transform target)
+        {
+            var tween = Pool.Count > 0 ? Pool.Dequeue() : new ServerSyncedTween();
+            tween.Initialize(target);
+            return tween;
+        }
+
+        public void OnServerUpdate(RemoteTweenData data)
+        {
+            _updates.Add(data);
+        }
+        
+        private void Initialize(Transform target)
+        {
+            Target = target;
+            _updates.Clear();
+            _isPaused = false;
+            _isCanceled = false;
+            _startTime = Time.time;
+        }
+
+        public override async UniTask Play(CancellationToken cancellationToken = default)
+        {
+            while (!_isCanceled)
+            {
+                if (_updates.Count > 1)
+                {
+                    _updates.Sort((a, b) => a.Time.CompareTo(b.Time));
+                }
+
+                if (_updates.Count > 0 && !_isPaused)
+                {
+                    var latestData = _updates[^1];
+                    Target.transform.position = Vector3.Lerp(Target.transform.position, latestData.Position, 0.1f);
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+            }
+            ReleaseToPool();
+        }
+
+        public override void Cancel() => _isCanceled = true;
+        public override void Pause() => _isPaused = true;
+        public override void Resume() => _isPaused = false;
+        public override void JumpTo(float time)
+        {
+            if (_updates.Count == 0) return;
+
+            _updates.Sort((a, b) => a.Time.CompareTo(b.Time));
+            foreach (var data in _updates)
+            {
+                if (data.Time >= time)
+                {
+                    Target.transform.position = data.Position;
+                    return;
+                }
+            }
+        }
+
+        private void ReleaseToPool()
+        {
+            _updates.Clear();
+            _isPaused = false;
+            _isCanceled = false;
+            Pool.Enqueue(this);
+        }
+    }
 }
