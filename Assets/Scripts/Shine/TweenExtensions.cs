@@ -6,6 +6,8 @@ using UnityEngine;
 
 namespace Shine
 {
+    #region Q1
+    
     public enum EaseType
     {
         Linear,
@@ -238,12 +240,16 @@ namespace Shine
         }
     }
     
+    #endregion
+    
+    #region Q2
+    
     public struct RemoteTweenData
     {
         public Vector3 Position;
         public float Time;
     }
-
+    
     public static class RemoteTweenSystem
     {
         private static readonly Dictionary<string, ServerSyncedTween> ActiveRemoteTweens = new();
@@ -255,12 +261,11 @@ namespace Shine
         
         public static void RegisterToRemoteTween(Transform localTarget, string remoteObjectID)
         {
-            if (!ActiveRemoteTweens.TryGetValue(remoteObjectID, out var tween))
-            {
-                tween = ServerSyncedTween.Get(localTarget);
-                ActiveRemoteTweens[remoteObjectID] = tween;
-                ListenToRemoteTween(remoteObjectID, tween.OnServerUpdate);
-            }
+            if (ActiveRemoteTweens.TryGetValue(remoteObjectID, out var tween)) 
+                return;
+            tween = ServerSyncedTween.Get(localTarget);
+            ActiveRemoteTweens[remoteObjectID] = tween;
+            ListenToRemoteTween(remoteObjectID, tween.OnServerUpdate);
         }
     }
 
@@ -325,11 +330,11 @@ namespace Shine
             _updates.Sort((a, b) => a.Time.CompareTo(b.Time));
             foreach (var data in _updates)
             {
-                if (data.Time >= time)
-                {
-                    Target.transform.position = data.Position;
-                    return;
-                }
+                if (!(data.Time >= time)) 
+                    continue;
+                
+                Target.transform.position = data.Position;
+                return;
             }
         }
 
@@ -341,4 +346,6 @@ namespace Shine
             Pool.Enqueue(this);
         }
     }
+    
+    #endregion
 }
